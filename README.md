@@ -189,3 +189,5 @@ cd ~/Projects/django-graphql-apollo-react-demo/src/backend
 ```
 
 > At this point you should be able to browse to `localhost:8000/admin/` and see the table of the new `simple_app` app.
+
+> You should also be able to run `pytest` and see 1 successful test.
