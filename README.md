@@ -15,6 +15,7 @@ In this workshop, we will address the following topics:
 1. [Create a Simple Django App](#create-simple-app)
 1. [Add GraphQL to Django](#add-graphql-to-django)
 1. [Add Message-DjangoObjectType to GraphQL Schema](#add-django-object-type)
+1. [Add Mutation to GraphQL Schema](#add-mutation)
 1. Add JWT-Authentication to Django
 
 ## Part 2: The Frontend
@@ -379,3 +380,109 @@ class Query(graphene.AbstractType):
 
 > At this point you should be able to run `pytest` and see four passing tests
 > You should also be able to browse to `graphiql` and run the query `{ message(id:1) { id, message } }`
+
+## <a name="add-mutation"></a>Add Mutation to GraphQL Schema
+
+Our API is able to return items from our DB. Now it is time to allow to write
+messages. Anything that changes data in GraphQL is called a "Mutation". We
+want to ensure that our mutation does three things:
+
+1. Return a 403 status if the user is not logged in
+1. Return a 400 status and form errors if the user does not provide a message
+1. Return a 200 status and the newly created message if everything is OK
+
+**File: ./backend/simple_app/tests/test_schema.py**
+
+```py
+from django.contrib.auth.models import AnonymousUser
+from django.test import RequestFactory
+
+def test_create_message_mutation():
+    user = mixer.blend('auth.User')
+    mut = schema.CreateMessageMutation()
+
+    data = {'message': 'Test'}
+    req = RequestFactory().get('/')
+    req.user = AnonymousUser()
+    res = mut.mutate(None, data, req, None)
+    assert res.status == 403, 'Should return 403 if user is not logged in'
+
+    req.user = user
+    res = mut.mutate(None, {}, req, None)
+    assert res.status == 400, 'Should return 400 if there are form errors'
+    assert 'message' in res.formErrors, (
+        'Should have form error for message field')
+
+    req.user = user
+    res = mut.mutate(None, {'message': 'Test'}, req, None)
+    assert res.status == 200, 'Should return 400 if there are form errors'
+    assert res.message.pk == 1, 'Should create new message'
+```
+
+With these tests in place, we can implement the actual mutation:
+
+**File: ./backend/simple_app/schema.py**
+
+```py
+import json
+
+class CreateMessageMutation(graphene.Mutation):
+    class Input:
+        message = graphene.String()
+
+    status = graphene.Int()
+    formErrors = graphene.String()
+    message = graphene.Field(MessageType)
+
+    @staticmethod
+    def mutate(root, args, context, info):
+        if not context.user.is_authenticated():
+            return CreateMessageMutation(status=403)
+        message = args.get('message', '').strip()
+        # Here we would usually use Django forms to validate the input
+        if not message:
+            return CreateMessageMutation(
+                status=400,
+                formErrors=json.dumps(
+                    {'message': ['Please enter a message.']}))
+        obj = models.Message.objects.create(
+            user=context.user, message=message
+        )
+        return CreateMessageMutation(status=200, message=obj)
+
+
+class Mutation(graphene.AbstractType):
+    create_message = CreateMessageMutation.Field()
+```
+
+This new `Mutation` class is currently not hooked up in our main `schema.py`
+file, so let's add that:
+
+**File: ./backend/backend/schema.py**
+
+```py
+class Mutations(
+    simple_app.schema.Mutation,
+    graphene.ObjectType,
+):
+    pass
+
+[...]
+
+schema = graphene.Schema(query=Queries, mutation=Mutations)
+```
+
+> At this point you should be able to run `pytest` and get five passing tests.
+> You should also be able to browse to `graphiql` and run this mutation:
+
+```graphql
+mutation {
+  createMessage(message: "Test") {
+    status,
+    formErrors,
+    message {
+      id
+    }
+  }
+}
+```
