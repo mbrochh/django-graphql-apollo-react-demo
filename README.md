@@ -106,4 +106,86 @@ an app that has a CreateView, a ListView and a DetailView.
 ```bash
 cd ~/Projects/django-graphql-apollo-react-demo/src/backend
 django-admin startapp simple_app
+cd simple_app
+mkdir tests
+touch tests/__init__.py
+touch tests/test_models.py
 ```
+
+Whenever we create a new app, we need to tell Django that this app is now part
+of our project:
+
+**File: ./backend/backend/settings.py**
+
+```py
+# Add `simple_app` to `INSTALLED_APPS` setting
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'simple_app',
+]
+```
+
+First, let's create a test for our upcoming new model. The model doesn't do
+much, so we will simply test if we are able to create an instance and save it
+to the DB. We are using [mixer](https://github.com/klen/mixer) to help us with
+the creation of test-fixtures.
+
+**File: ./backend/simple_app/tests/test_models.py**
+
+```py
+import pytest
+from mixer.backend.django import mixer
+
+# We need to do this so that writing to the DB is possible in our tests.
+pytestmark = pytest.mark.django_db
+
+
+def test_message():
+    obj = mixer.blend('simple_app.Message')
+    assert obj.pk > 0
+```
+
+Next, let's create our `Message` model:
+
+**File: ./backend/simple_app/models.py**
+
+```py
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from django.db import models
+
+class Message(models.Model):
+    user = models.ForeignKey('auth.User')
+    message = models.TextField()
+    creation_date = models.DateTimeField(auto_now_add=True)
+```
+
+Let's also register the new model with the Django admin, so that we can add
+entries to the new table:
+
+**File: ./backend/simple_app/admin.py**
+
+```py
+# -*- coding: utf-8 -*-
+from __future__ import unicode_literals
+from django.contrib import admin
+from . import models
+
+admin.site.register(models.Message)
+```
+
+Whenever we make changes to a model, we need to create and run a migration:
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/backend
+./manage.py makemigrations simple_app
+./manage.py migrate
+```
+
+> At this point you should be able to browse to `localhost:8000/admin/` and see the table of the new `simple_app` app.
