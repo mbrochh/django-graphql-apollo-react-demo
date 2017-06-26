@@ -222,15 +222,13 @@ INSTALLED_APPS = [
     'simple_app',
 ]
 
-# This tells GraphQL where our main schema file is. This is similar to Django's
-# main `urls.py` file.
 GRAPHENE = {
     'SCHEMA': 'backend.schema.schema',
 }
 ```
 
-Now we need to create said `schema.py` file. This file is similar to our main
-`urls.py` - it's task is to import all the schema-files in our project and
+Now we need to create our main `schema.py` file. This file is similar to our
+main `urls.py` - it's task is to import all the schema-files in our project and
 merge them into one big schema.
 
 **File: ./backend/backend/schema.py**
