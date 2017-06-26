@@ -13,8 +13,8 @@ In this workshop, we will address the following topics:
 
 1. [Create a new Django Project](#create-new-django-project)
 1. [Create a Simple Django App](#create-simple-app)
-1. Add GraphQL to Django
-1. Add GaphQL-Schema to Django (CRUD Views & Tests)
+1. [Add GraphQL to Django](#add-graphql-to-django)
+1. Add Message-DjangoObjectType to GraphQL Schema
 1. Add JWT-Authentication to Django
 
 ## Part 2: The Frontend
@@ -31,6 +31,8 @@ In this workshop, we will address the following topics:
 1. Add Filtering to ListView
 1. Add Pagination to ListView
 1. Add Cache Invalidation
+
+Before you start, you should read a little bit about [GraphQL](http://graphql.org/learn/) and [Apollo](http://dev.apollodata.com/react/) and [python-graphene](http://docs.graphene-python.org/projects/django/en/latest/).
 
 # <a name="part1"></a>Part 1: The Backend
 
@@ -191,3 +193,77 @@ cd ~/Projects/django-graphql-apollo-react-demo/src/backend
 > At this point you should be able to browse to `localhost:8000/admin/` and see the table of the new `simple_app` app.
 
 > You should also be able to run `pytest` and see 1 successful test.
+
+## <a name="add-graphql-to-django"></a>Add GraphQL to Django
+
+Sinve we have now a Django project with a model, we can start thinking about
+adding an API. We will use GraphQL for that.
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/backend
+pip install graphene-django
+```
+
+Whenever we add a new app to Django, we need to update our `INSTALLED_APPS`
+setting. Because of `graphene-django`, we also need to add one app-specific
+setting.
+
+**File: ./backend/backend/settings.py**
+
+```py
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'graphene_django',
+    'simple_app',
+]
+
+# This tells GraphQL where our main schema file is. This is similar to Django's
+# main `urls.py` file.
+GRAPHENE = {
+    'SCHEMA': 'backend.schema.schema',
+}
+```
+
+Now we need to create said `schema.py` file. This file is similar to our main
+`urls.py` - it's task is to import all the schema-files in our project and
+merge them into one big schema.
+
+**File: ./backend/backend/schema.py**
+
+```py
+import graphene
+
+class Queries(
+    graphene.ObjectType
+):
+    dummy = graphene.String()
+
+
+schema = graphene.Schema(query=Queries)
+```
+
+Finally, we need to hook up GraphiQL in our Django `urls.py`:
+
+**File: ./backend/backend/urls.py**
+
+```py
+from django.conf.urls import url
+from django.contrib import admin
+from django.views.decorators.csrf import csrf_exempt
+
+from graphene_django.views import GraphQLView
+
+
+urlpatterns = [
+    url(r'^admin/', admin.site.urls),
+    url(r'^graphiql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url(r'^gql', csrf_exempt(GraphQLView.as_view(batch=True))),
+]
+```
+
+> At this point you should be able to browse to `localhost:8000/graphiql` and run the query `{ dummy }`
