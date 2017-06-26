@@ -14,7 +14,7 @@ In this workshop, we will address the following topics:
 1. [Create a new Django Project](#create-new-django-project)
 1. [Create a Simple Django App](#create-simple-app)
 1. [Add GraphQL to Django](#add-graphql-to-django)
-1. Add Message-DjangoObjectType to GraphQL Schema
+1. [Add Message-DjangoObjectType to GraphQL Schema](#add-django-object-type)
 1. Add JWT-Authentication to Django
 
 ## Part 2: The Frontend
@@ -265,3 +265,115 @@ urlpatterns = [
 ```
 
 > At this point you should be able to browse to `localhost:8000/graphiql` and run the query `{ dummy }`
+
+## <a name="add-django-object-type"></a>Add Message-DjangoObjectType to GraphQL Schema
+
+If you have used Django Rest Framework before, you know that you have to create
+serializers for all your models. With GraphQL it is very similar: You have to
+create Types for all your models.
+
+We will begin with creating a type for our Message model and when we are at it,
+we will also create a query that returns all messages.
+
+In good TDD fashion, we begin with a test for the type and a test for the
+query:
+
+**File: ./backend/simple_app/tests/test_schema.py**
+
+```py
+import pytest
+from mixer.backend.django import mixer
+
+from .. import schema
+
+
+pytestmark = pytest.mark.django_db
+
+
+def test_message_type():
+    instance = schema.MessageType()
+    assert instance
+
+
+def test_all_messages():
+    mixer.blend('simple_app.Message')
+    mixer.blend('simple_app.Message')
+    q = schema.Query()
+    res = q.resolve_all_messages(None, None, None)
+    assert res.count() == 2, 'Should return all messages'
+```
+
+In order to make our test pass, we will now add our type and the query:
+
+```py
+import graphene
+from graphene_django.types import DjangoObjectType
+
+from . import models
+
+
+class MessageType(DjangoObjectType):
+    class Meta:
+        model = models.Message
+
+
+class Query(graphene.AbstractType):
+    all_messages = graphene.List(MessageType)
+
+    def resolve_all_messages(self, args, context, info):
+        return models.Message.objects.all()
+```
+
+Finally, we need to update your main `schema.py` file:
+
+**File: ./backend/backend/schema.py**
+
+```py
+import graphene
+
+import simple_app.schema
+
+
+class Queries(
+    simple_app.schema.Query,
+    graphene.ObjectType
+):
+    dummy = graphene.String()
+
+
+schema = graphene.Schema(query=Queries)
+```
+
+> At this point, you should be able to run `pytest` and get three passing tests.
+> You should also be able to add a few messages to the DB at `localhost:8000/admin/simple_app/message/`
+> You should also be able to browse to `localhost:8000/graphiql/` and run the query `{ allMessages { id, message } }`
+
+The query `all_messages` returns a list of objects. Let's add another query
+that returns just one object:
+
+**File: ./backend/simple_app/tests/test_schema.py**
+
+```py
+def test_message():
+    msg = mixer.blend('simple_app.Message')
+    q = schema.Query()
+    res = q.resolve_messages(None, {'id': msg.pk}, None)
+    assert res == msg, 'Should return the requested message'
+```
+
+To make the test pass, let's update our schema file:
+
+**File: ./backend/simple_app/schema.py**
+
+```py
+class Query(graphene.AbstractType):
+    message = graphene.Field(MessageType, id=graphene.Int())
+
+    def resolve_message(self, args, context, info):
+        return models.Message.objects.get(pk=args.get('id'))
+
+    [...]
+```
+
+> At this point you should be able to run `pytest` and see four passing tests
+> You should also be able to browse to `graphiql` and run the query `{ message(id:2) { id, message } }`
