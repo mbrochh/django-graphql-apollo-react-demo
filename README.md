@@ -35,6 +35,12 @@ In this workshop, we will address the following topics:
 
 Before you start, you should read a little bit about [GraphQL](http://graphql.org/learn/) and [Apollo](http://dev.apollodata.com/react/) and [python-graphene](http://docs.graphene-python.org/projects/django/en/latest/).
 
+If you have basic understanding of Python, Django, JavaScript and ReactJS, you
+should be able to follow this tutorial and copy and paste the code snippets
+shown below and hopefully it will all work out nicely. It should give you a
+feeling for the necessary steps involved, for the files involved and some ideas
+for some useful patterns that most people usually need in their apps.
+
 # <a name="part1"></a>Part 1: The Backend
 
 ## <a name="create-new-django-project"></a>Create a new Django Project
