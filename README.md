@@ -35,3 +35,23 @@ In this workshop, we will address the following topics:
 # <a name="part1"></a>Part 1: The Backend
 
 ## <a name="create-new-django-project"></a>Create a new Django Project
+
+For this demonstration we will need a backend that can serve our GraphQL API.
+We will chose Django for this, so the first thing we want to do is to create a
+new Django project. If you are new to Python, you need to read about [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/), first.
+
+```bash
+mkdir -p ~/Projects/django-graphql-apollo-react-demo/src
+cd ~/Projects/django-graphql-apollo-react-demo/src
+mkvirtualenv django-graphql-apollo-react-demo
+pip install django
+django-admin startproject backend
+cd backend
+django-admin startapp simple_app
+./manage.py migrate
+./manage.py createsuperuser
+./manage.py runserver
+```
+
+> You should now be able to browse to `localhost:8000/admin/` and login with
+> your superuser account
