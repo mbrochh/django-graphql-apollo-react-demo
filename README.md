@@ -305,6 +305,8 @@ def test_all_messages():
 
 In order to make our test pass, we will now add our type and the query:
 
+**File: ./backend/simple_app/schema.py**
+
 ```py
 import graphene
 from graphene_django.types import DjangoObjectType
@@ -376,4 +378,4 @@ class Query(graphene.AbstractType):
 ```
 
 > At this point you should be able to run `pytest` and see four passing tests
-> You should also be able to browse to `graphiql` and run the query `{ message(id:2) { id, message } }`
+> You should also be able to browse to `graphiql` and run the query `{ message(id:1) { id, message } }`
