@@ -95,8 +95,7 @@ DJANGO_SETTINGS_MODULE = backend.test_settings
 omit = manage.py, *wsgi.py, *test_settings.py, *settings.py, *urls.py, *__init__.py, */apps.py, */tests/*, */migrations/*
 ```
 
-> You should now be able to execute `pytest --cov-report html --cov .` and then
-> `open htmlcov/index.html` to see the coverage report.
+> From your `./backend` folder, you should now be able to execute `pytest --cov-report html --cov .` and then `open htmlcov/index.html` to see the coverage report.
 
 ## <a name="create-simple-app"></a>Create a Simple Django App
 
