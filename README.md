@@ -28,7 +28,7 @@ In this workshop, we will address the following topics:
 1. [Add Login / Logout Views](#add-login-logout-views)
 1. [Add Mutation for CreateView](#add-mutation-for-create-view)
 1. [Show Form Errors on CreateView](#show-form-errors)
-1. Add Filtering to ListView
+1. [Add Filtering to ListView](#add-filtering)
 1. Add Pagination to ListView
 1. Add Cache Invalidation
 
@@ -1295,3 +1295,127 @@ displays the form errors:
 ```
 
 > At this point you should be able to submit an empty message and see a form error.
+
+## <a name="add-filtering"></a>Add Filtering to ListView
+
+So far, our `allMessages` query always returns all messages. It would be nice
+if we could add a search bar to our app and filter messages by text.
+graphene-django has some integration with [django-filter](https://github.com/carltongibson/django-filter), so this task
+can be solved easily:
+
+```py
+# File: ./backend/simple_app/schema.py
+[...]
+from graphene_django.filter.fields import DjangoFilterConnectionField
+[...]
+
+class MessageType(DjangoObjectType):
+    class Meta:
+        model = models.Message
+        filter_fields = {'message': ['icontains']}
+        interfaces = (graphene.Node, )
+[...]
+
+class Query(graphene.AbstractType):
+    [...]
+    all_messages = DjangoFilterConnectionField(MessageType)
+```
+
+> At this point you should be able to run the following query:
+
+```graphql
+{
+  allMessages(message_Icontains: "Te") {
+    edges {
+      node {
+        id, message
+      }
+    }
+  }
+}
+```
+
+Let's update our ListView and add a search field. We will use the `query-string`
+module to parse the query string in the URL (i.e. `?search=foo`).
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/frontend/
+yarn add query-string
+```
+
+Notable steps to be taken in the ListView:
+
+1. Import the new `queryString` module
+1. Change the `const query` so that it can take variables (`$search`)
+1. Add a `handleSearchSubmit` handler that changes the URL via
+   `this.props.history.push` (thanks to react-router)
+1. Add `queryOptions` and pass in the `search` variable into the query from the
+   props (`props.location.search`), if available
+
+```jsx
+// File: ./frontend/src/views/ListView.js
+
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { gql, graphql } from 'react-apollo'
+import queryString from 'query-string'
+
+const query = gql`
+query ListViewSearch($search: String) {
+  allMessages(message_Icontains: $search) {
+    edges {
+      node {
+        id, message
+      }
+    }
+  }
+}
+`
+
+class ListView extends React.Component {
+  handleSearchSubmit(e) {
+    e.preventDefault()
+    let data = new FormData(this.form)
+    let query = `?search=${data.get('search')}`
+    this.props.history.push(`/${query}`)
+  }
+
+  render() {
+    let { data } = this.props
+    if (data.loading || !data.allMessages) {
+      return <div>Loading...</div>
+    }
+    return (
+      <div>
+        <form
+          ref={ref => (this.form = ref)}
+          onSubmit={e => this.handleSearchSubmit(e)}
+        >
+          <input type="text" name="search" />
+          <button type="submit">Search</button>
+        </form>
+        {data.allMessages.edges.map(item => (
+          <p key={item.node.id}>
+            <Link to={`/messages/${item.node.id}/`}>
+              {item.node.message}
+            </Link>
+          </p>
+        ))}
+      </div>
+    )
+  }
+}
+
+const queryOptions = {
+  options: props => ({
+    variables: {
+      search: queryString.parse(props.location.search).search,
+    },
+  }),
+}
+
+ListView = graphql(query, queryOptions)(ListView)
+export default ListView
+```
+
+> At this point you should be able to submit searches see filtered results

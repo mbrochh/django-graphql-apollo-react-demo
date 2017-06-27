@@ -2,6 +2,7 @@ import json
 import graphene
 from django.contrib.auth.models import User
 from graphene_django.types import DjangoObjectType
+from graphene_django.filter.fields import DjangoFilterConnectionField
 
 from . import models
 
@@ -14,6 +15,8 @@ class UserType(DjangoObjectType):
 class MessageType(DjangoObjectType):
     class Meta:
         model = models.Message
+        filter_fields = {'message': ['icontains']}
+        interfaces = (graphene.Node, )
 
 
 class CreateMessageMutation(graphene.Mutation):
@@ -57,7 +60,7 @@ class Query(graphene.AbstractType):
     def resolve_message(self, args, context, info):
         return models.Message.objects.get(pk=args.get('id'))
 
-    all_messages = graphene.List(MessageType)
+    all_messages = DjangoFilterConnectionField(MessageType)
 
     def resolve_all_messages(self, args, context, info):
         return models.Message.objects.all()
