@@ -27,7 +27,7 @@ In this workshop, we will address the following topics:
 1. [Add Token Middleware for Authentication](#add-token-middleware)
 1. [Add Login / Logout Views](#add-login-logout-views)
 1. [Add Mutation for CreateView](#add-mutation-for-create-view)
-1. Show Form Errors on CreateView
+1. [Show Form Errors on CreateView](#show-form-errors)
 1. Add Filtering to ListView
 1. Add Pagination to ListView
 1. Add Cache Invalidation
@@ -1225,3 +1225,73 @@ export default CreateView
 ```
 
 > At this point you should be able to submit a new message and then see it on the ListView
+
+## <a name="show-form-errors"></a>Show Form Errors on CreateView
+
+What if the user enters an empty message? We would like to show some form
+errors. Our schema actually already has this validation in place:
+
+```py
+def mutate(root, args, context, info):
+    [...]
+    message = args.get('message', '').strip()
+    if not message:
+        return CreateMessageMutation(
+            status=400,
+            formErrors=json.dumps(
+                {'message': ['Please enter a message.']}))
+    [...]
+```
+
+Note: In the real world you would use a Django form for this and do something
+like this:
+
+```py
+def mutate(root, args, context, info):
+  [...]
+  form = CreateMessageForm(data=args)
+  if not form.is_valid():
+      return CreateMessageMutation(
+        status=400, formErrors=json.dumps(form.errors))
+```
+
+So validation is already in place, let's update our CreateView so that it
+displays the form errors:
+
+```jsx
+// File: ./frontend/src/views/CreateView.js
+
+  // Update this function:
+  handleSubmit(e) {
+    e.preventDefault()
+    let data = new FormData(this.form)
+    this.props
+      .mutate({ variables: { message: data.get('message') } })
+      .then(res => {
+        if (res.data.createMessage.status === 200) {
+          window.location.replace('/')
+        }
+        if (res.data.createMessage.status === 400) {
+          this.setState({
+            formErrors: JSON.parse(res.data.createMessage.formErrors),
+          })
+        }
+      })
+      .catch(err => {
+        console.log('Network error')
+      })
+  }
+
+  [...]
+
+  // Update this part of the render() function:
+  <div>
+    <label>Message:</label>
+    <textarea name="message" />
+    {this.state.formErrors &&
+      this.state.formErrors.message &&
+      <p>Error: {this.state.formErrors.message}</p>}
+  </div>
+```
+
+> At this point you should be able to submit an empty message and see a form error.

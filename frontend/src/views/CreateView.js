@@ -22,6 +22,11 @@ const query = gql`
 `
 
 class CreateView extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { formErrors: null }
+  }
+
   componentWillUpdate(nextProps) {
     if (!nextProps.data.loading && nextProps.data.currentUser === null) {
       window.location.replace('/login/')
@@ -34,8 +39,13 @@ class CreateView extends React.Component {
     this.props
       .mutate({ variables: { message: data.get('message') } })
       .then(res => {
-        if (res.status === 200) {
+        if (res.data.createMessage.status === 200) {
           window.location.replace('/')
+        }
+        if (res.data.createMessage.status === 400) {
+          this.setState({
+            formErrors: JSON.parse(res.data.createMessage.formErrors),
+          })
         }
       })
       .catch(err => {
@@ -58,6 +68,9 @@ class CreateView extends React.Component {
           <div>
             <label>Message:</label>
             <textarea name="message" />
+            {this.state.formErrors &&
+              this.state.formErrors.message &&
+              <p>Error: {this.state.formErrors.message}</p>}
           </div>
           <button type="submit">Submit Message</button>
         </form>
