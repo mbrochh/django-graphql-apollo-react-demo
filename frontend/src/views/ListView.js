@@ -4,12 +4,18 @@ import { gql, graphql } from 'react-apollo'
 import queryString from 'query-string'
 
 const query = gql`
-query ListViewSearch($search: String) {
-  allMessages(message_Icontains: $search) {
+query ListViewSearch($search: String, $endCursor: String) {
+  allMessages(first: 2, message_Icontains: $search, after: $endCursor) {
     edges {
       node {
         id, message
       }
+    },
+    pageInfo {
+      hasNextPage,
+      hasPreviousPage,
+      startCursor,
+      endCursor
     }
   }
 }
@@ -21,6 +27,27 @@ class ListView extends React.Component {
     let data = new FormData(this.form)
     let query = `?search=${data.get('search')}`
     this.props.history.push(`/${query}`)
+  }
+
+  loadMore() {
+    let { data, location } = this.props
+    data.fetchMore({
+      query: query,
+      variables: {
+        search: queryString.parse(location.search).search,
+        endCursor: data.allMessages.pageInfo.endCursor,
+      },
+      updateQuery: (prev, next) => {
+        const newEdges = next.fetchMoreResult.allMessages.edges
+        const pageInfo = next.fetchMoreResult.allMessages.pageInfo
+        return {
+          allMessages: {
+            edges: [...prev.allMessages.edges, ...newEdges],
+            pageInfo,
+          },
+        }
+      },
+    })
   }
 
   render() {
@@ -44,6 +71,8 @@ class ListView extends React.Component {
             </Link>
           </p>
         ))}
+        {data.allMessages.pageInfo.hasNextPage &&
+          <button onClick={() => this.loadMore()}>Load more...</button>}
       </div>
     )
   }

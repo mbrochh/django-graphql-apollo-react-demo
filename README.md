@@ -29,7 +29,7 @@ In this workshop, we will address the following topics:
 1. [Add Mutation for CreateView](#add-mutation-for-create-view)
 1. [Show Form Errors on CreateView](#show-form-errors)
 1. [Add Filtering to ListView](#add-filtering)
-1. Add Pagination to ListView
+1. [Add Pagination to ListView](#add-pagination)
 1. Add Cache Invalidation
 
 Before you start, you should read a little bit about [GraphQL](http://graphql.org/learn/) and [Apollo](http://dev.apollodata.com/react/) and [python-graphene](http://docs.graphene-python.org/projects/django/en/latest/).
@@ -1301,7 +1301,9 @@ displays the form errors:
 So far, our `allMessages` query always returns all messages. It would be nice
 if we could add a search bar to our app and filter messages by text.
 graphene-django has some integration with [django-filter](https://github.com/carltongibson/django-filter), so this task
-can be solved easily:
+can be solved easily.
+
+Note: You can learn more about filtering [here](http://docs.graphene-python.org/projects/django/en/latest/filtering/).
 
 ```py
 # File: ./backend/simple_app/schema.py
@@ -1418,4 +1420,125 @@ ListView = graphql(query, queryOptions)(ListView)
 export default ListView
 ```
 
-> At this point you should be able to submit searches see filtered results
+> At this point you should be able to submit searches and see filtered results
+
+## <a name="add-pagination"></a>Add Pagination to ListView
+
+Another very common use-case is pagination and/or endless scrolling.
+graphene-django has cursor-based pagination built-in, so let's give it a try:
+
+In our schema, we are already using the `DjangoFilterConnectionField` for our
+`allMessages` endpoint. Luckily, that has all the magic built-in, already.
+
+Our update ListView should look as follows. Notable changes:
+
+1. The `const query` now takes to variables (`$message`, and `$endCursor`)
+1. We extended the query to also return `pageInfo` - this contains information
+   about wether or not there are more pages and how to get there.
+1. We added a button with a `loadMore()` handler
+1. The handler calls [`data.fetchMore`](http://dev.apollodata.com/react/pagination.html#fetch-more)
+1. In the `fetchMore` call, we call the same query but now with one more variable
+1. We provide an `updateQuery` callback, here we have to decide what to do with
+   the new data (we want to add it to the end of the list of current data)
+1. In `updateQuery`, we return an object that looks like
+   `this.props.data.allMessages` should look like. This will trigger a component
+   re-render
+1. We updated `render()` to show a `Load more...` button, as long as there are
+   more items available
+
+```jsx
+// File: ./frontend/src/views/ListView.js
+
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { gql, graphql } from 'react-apollo'
+import queryString from 'query-string'
+
+const query = gql`
+query ListViewSearch($search: String, $endCursor: String) {
+  allMessages(first: 2, message_Icontains: $search, after: $endCursor) {
+    edges {
+      node {
+        id, message
+      }
+    },
+    pageInfo {
+      hasNextPage,
+      hasPreviousPage,
+      startCursor,
+      endCursor
+    }
+  }
+}
+`
+
+class ListView extends React.Component {
+  handleSearchSubmit(e) {
+    e.preventDefault()
+    let data = new FormData(this.form)
+    let query = `?search=${data.get('search')}`
+    this.props.history.push(`/${query}`)
+  }
+
+  loadMore() {
+    let { data, location } = this.props
+    data.fetchMore({
+      query: query,
+      variables: {
+        search: queryString.parse(location.search).search,
+        endCursor: data.allMessages.pageInfo.endCursor,
+      },
+      updateQuery: (prev, next) => {
+        const newEdges = next.fetchMoreResult.allMessages.edges
+        const pageInfo = next.fetchMoreResult.allMessages.pageInfo
+        return {
+          allMessages: {
+            edges: [...prev.allMessages.edges, ...newEdges],
+            pageInfo,
+          },
+        }
+      },
+    })
+  }
+
+  render() {
+    let { data } = this.props
+    if (data.loading || !data.allMessages) {
+      return <div>Loading...</div>
+    }
+    return (
+      <div>
+        <form
+          ref={ref => (this.form = ref)}
+          onSubmit={e => this.handleSearchSubmit(e)}
+        >
+          <input type="text" name="search" />
+          <button type="submit">Search</button>
+        </form>
+        {data.allMessages.edges.map(item => (
+          <p key={item.node.id}>
+            <Link to={`/messages/${item.node.id}/`}>
+              {item.node.message}
+            </Link>
+          </p>
+        ))}
+        {data.allMessages.pageInfo.hasNextPage &&
+          <button onClick={() => this.loadMore()}>Load more...</button>}
+      </div>
+    )
+  }
+}
+
+const queryOptions = {
+  options: props => ({
+    variables: {
+      search: queryString.parse(props.location.search).search,
+    },
+  }),
+}
+
+ListView = graphql(query, queryOptions)(ListView)
+export default ListView
+```
+
+> At this point you should be able to click the `Load more...` button and new items should appear, when there are no more items, the button should disappear.
