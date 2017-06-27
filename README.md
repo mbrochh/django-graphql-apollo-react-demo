@@ -25,7 +25,7 @@ In this workshop, we will address the following topics:
 1. [Add Apollo to React](#add-apollo)
 1. [Add Query with Variables for DetailView](#add-query-with-variables)
 1. [Add Token Middleware for Authentication](#add-token-middleware)
-1. Add Login / Logout Views
+1. [Add Login / Logout Views](#add-login-logout-views)
 1. Add Mutation for CreateView
 1. Show Form Errors on CreateView
 1. Add Filtering to ListView
@@ -1040,7 +1040,9 @@ export default CreateView
 
 > At this point, you should be able to click at the `Create Message` link and be redirected to the `/login/` view.
 
-Finally, we want to be able to actually login and receive a valid JWT token, so
+## <a name="add-login-logout-views"></a>Add Login / Logout Views
+
+Now we want to be able to actually login and receive a valid JWT token, so
 lets implement the LoginView. Here are some notable steps:
 
 1. We use the `fetch` api to send the request to the `api-token-auth` endpoint
