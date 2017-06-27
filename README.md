@@ -26,7 +26,7 @@ In this workshop, we will address the following topics:
 1. [Add Query with Variables for DetailView](#add-query-with-variables)
 1. [Add Token Middleware for Authentication](#add-token-middleware)
 1. [Add Login / Logout Views](#add-login-logout-views)
-1. Add Mutation for CreateView
+1. [Add Mutation for CreateView](#add-mutation-for-create-view)
 1. Show Form Errors on CreateView
 1. Add Filtering to ListView
 1. Add Pagination to ListView
@@ -1131,3 +1131,97 @@ export default class LogoutView extends React.Component {
 ```
 
 > At this point you should be able to login, browse to `Create Message` view and to logout again.
+
+## <a name="add-mutation-for-create-view"></a>Add Mutation for CreateView
+
+Since we are now able to login and visit the CreateView, it is time to add a
+mutation to the CreateView that allows us to write new messages into the DB.
+
+Notable steps involved:
+
+1. Create a `const mutation` that is named after the class and needs one variable
+1. Create a `submitHandler` that calls `this.props.mutate` and provides the
+   required variable
+1. Wrap the class in another `graphql` decorator so that the mutation gets
+   registered and is available via `this.props.mutate`
+
+```jsx
+// File: ./frontend/src/views/CreateView.js
+
+import React from 'react'
+import { gql, graphql } from 'react-apollo'
+
+// This is new:
+const mutation = gql`
+mutation CreateView($message: String!) {
+  createMessage(message: $message) {
+    status,
+    formErrors,
+    message {
+      id
+    }
+  }
+}
+`
+
+const query = gql`
+{
+  currentUser {
+    id
+  }
+}
+`
+
+class CreateView extends React.Component {
+  componentWillUpdate(nextProps) {
+    if (!nextProps.data.loading && nextProps.data.currentUser === null) {
+      window.location.replace('/login/')
+    }
+  }
+
+  // This is new:
+  handleSubmit(e) {
+    e.preventDefault()
+    let data = new FormData(this.form)
+    this.props
+      .mutate({ variables: { message: data.get('message') } })
+      .then(res => {
+        if (res.status === 200) {
+          window.location.replace('/')
+        }
+      })
+      .catch(err => {
+        console.log('Network error')
+      })
+  }
+
+  render() {
+    // This is new:
+    let { data } = this.props
+    if (data.loading || data.currentUser === null) {
+      return <div>Loading...</div>
+    }
+    return (
+      <div>
+        <h1>Create Message</h1>
+        <form
+          ref={ref => (this.form = ref)}
+          onSubmit={e => this.handleSubmit(e)}
+        >
+          <div>
+            <label>Message:</label>
+            <textarea name="message" />
+          </div>
+          <button type="submit">Submit Message</button>
+        </form>
+      </div>
+    )
+  }
+}
+
+CreateView = graphql(query)(CreateView)
+CreateView = graphql(mutation)(CreateView)  // <-- This is new
+export default CreateView
+```
+
+> At this point you should be able to submit a new message and then see it on the ListView
