@@ -18,7 +18,7 @@ In this workshop, we will address the following topics:
 1. [Add Mutation to GraphQL Schema](#add-mutation)
 1. [Add JWT-Authentication to Django](#add-jwt)
 
-## Part 2: The Frontend
+## [Part 2: The Frontend](#part2)
 
 1. [Create a new React Project](#create-new-react-project)
 1. [Add ReactRouter to React](#add-react-router)
@@ -569,7 +569,7 @@ urlpatterns = [
 
 > At this point you should be able to get a token by sending this request: `curl -X POST -d "username=admin&password=test1234" http://localhost:8000/api-token-auth/`
 
-# Part 2: The Frontend
+# <a name="part2"></a>Part 2: The Frontend
 
 In Part 1, we create a Django backend that serves a GraphQL API. In this part
 we will create a ReactJS frontend that consumes that API.
