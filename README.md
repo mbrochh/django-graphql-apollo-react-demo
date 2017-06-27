@@ -21,7 +21,7 @@ In this workshop, we will address the following topics:
 ## Part 2: The Frontend
 
 1. [Create a new React Project](#create-new-react-project)
-1. Add ReactRouter to React
+1. [Add ReactRouter to React](#add-react-router)
 1. Add Apollo to React
 1. Add Token Middleware for Authentication
 1. Add Login / Logout Views
@@ -571,7 +571,13 @@ urlpatterns = [
 
 # Part 2: The Frontend
 
+In Part 1, we create a Django backend that serves a GraphQL API. In this part
+we will create a ReactJS frontend that consumes that API.
+
 ## <a name="create-new-react-project"></a>Create a new React Project
+
+Facebook has released a wonderful command line tool that kickstarts a new
+ReactJS project with a powerful webpack configuration. Let's use that:
 
 ```bash
 cd ~/Projects/django-graphql-apollo-react-demo/src
@@ -582,3 +588,77 @@ yarn start
 ```
 
 > At this point you should be able to run `yarn start` and the new ReactJS project should open up in a browser tab
+
+## Add ReactRouter to React](#add-react-router)
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/frontend
+yarn add react-router-dom
+```
+
+First, we need to replace the example code in `App.js` with our own code:
+
+```jsx
+import React, { Component } from 'react'
+import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom'
+import CreateView from './views/CreateView'
+import DetailView from './views/DetailView'
+import ListView from './views/ListView'
+import LoginView from './views/LoginView'
+import LogoutView from './views/LogoutView'
+
+class App extends Component {
+  render() {
+    return (
+      <Router>
+        <div>
+          <ul>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/messages/create/">Create Message</Link></li>
+            <li><Link to="/login/">Login</Link></li>
+            <li><Link to="/logout/">Logout</Link></li>
+          </ul>
+          <Route exact path="/" component={ListView} />
+          <Route exact path="/login/" component={LoginView} />
+          <Route exact path="/logout/" component={LogoutView} />
+          <Switch>
+            <Route path="/messages/create/" component={CreateView} />
+            <Route path="/messages/:id/" component={DetailView} />
+          </Switch>
+        </div>
+      </Router>
+    )
+  }
+}
+
+export default App
+```
+
+You will notice that we imported a bunch of views that don't yet exist. Let's
+create them:
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/frontend/src/
+mkdir views
+touch views/CreateView.js
+touch views/DetailView.js
+touch views/ListView.js
+touch views/LoginView.js
+touch views/LogoutView.js
+```
+
+Now fill each view with the following placeholder code:
+
+```jsx
+// File: ./frontend/src/views/ListView.js
+
+import React from 'react'
+
+export default class ListView extends React.Component {
+  render() {
+    return <div>ListView</div>
+  }
+}
+```
+
+> At this point you should be able to run `yarn start` and see your projects. When you click at the links, the corresponding views should be rendered and the URL should change.

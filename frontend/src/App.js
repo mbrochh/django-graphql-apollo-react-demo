@@ -1,21 +1,33 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from 'react'
+import { BrowserRouter as Router, Route, Switch, Link } from 'react-router-dom'
+import CreateView from './views/CreateView'
+import DetailView from './views/DetailView'
+import ListView from './views/ListView'
+import LoginView from './views/LoginView'
+import LogoutView from './views/LogoutView'
 
 class App extends Component {
   render() {
     return (
-      <div className="App">
-        <div className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h2>Welcome to React</h2>
+      <Router>
+        <div>
+          <ul>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/messages/create/">Create Message</Link></li>
+            <li><Link to="/login/">Login</Link></li>
+            <li><Link to="/logout/">Logout</Link></li>
+          </ul>
+          <Route exact path="/" component={ListView} />
+          <Route exact path="/login/" component={LoginView} />
+          <Route exact path="/logout/" component={LogoutView} />
+          <Switch>
+            <Route path="/messages/create/" component={CreateView} />
+            <Route path="/messages/:id/" component={DetailView} />
+          </Switch>
         </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
-    );
+      </Router>
+    )
   }
 }
 
-export default App;
+export default App
