@@ -647,7 +647,8 @@ touch views/LoginView.js
 touch views/LogoutView.js
 ```
 
-Now fill each view with the following placeholder code:
+Now fill each view with the following placeholder code, just change the class
+name and text in the div to the corresponding file-name.
 
 ```jsx
 // File: ./frontend/src/views/ListView.js
