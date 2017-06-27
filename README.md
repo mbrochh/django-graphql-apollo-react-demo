@@ -23,10 +23,9 @@ In this workshop, we will address the following topics:
 1. [Create a new React Project](#create-new-react-project)
 1. [Add ReactRouter to React](#add-react-router)
 1. [Add Apollo to React](#add-apollo)
+1. [Add Query with Variables for DetailView](#add-query-with-variables)
 1. Add Token Middleware for Authentication
 1. Add Login / Logout Views
-1. Add Query for ListView
-1. Add Query with Variables for DetailView
 1. Add Mutation for CreateView
 1. Show Form Errors on CreateView
 1. Add Filtering to ListView
@@ -779,3 +778,61 @@ export default ListView
 ```
 
 > At this point, you should be able to browse to `localhost:3000/` and see a list of messages. If you don't have any message in your database yet, add some at `localhost:8000/admin/`
+
+## <a name="add-query-with-variables"></a>Add Query with Variables for DetailView
+
+We have now learned how to attach a simple query to a component, but what about
+queries that need some dynamic values. For example, when we click into the
+detail view of an item, we can't just query `allMessages`, we need to query
+the message with a certain ID. Let's implement that in our DetailView. The
+steps are slightly different here:
+
+1. Our query is a name query (same name as component class name)
+2. The named query defines a variable `$id`
+3. We pass in `queryOptions` into the `graphql` decorator
+4. `queryOptions` has a field `options` which is an anonymous function that
+   accepts `props` as a parameter.
+5. Thanks to react-router, we have access to `props.match.params.id` (id is the
+   `/:id/` part of the path of our Route)
+
+```jsx
+import React from 'react'
+import { gql, graphql } from 'react-apollo'
+
+const query = gql`
+query DetailView($id: Int!) {
+  message(id: $id) {
+    id, creationDate, message
+  }
+}
+`
+
+class DetailView extends React.Component {
+  render() {
+    let { data } = this.props
+    if (data.loading || !data.message) {
+      return <div>Loading...</div>
+    }
+    return (
+      <div>
+        <h1>Message {data.message.id}</h1>
+        <p>{data.message.creationDate}</p>
+        <p>{data.message.message}</p>
+      </div>
+    )
+  }
+}
+
+const queryOptions = {
+  options: props => ({
+    variables: {
+      id: props.match.params.id,
+    },
+  }),
+}
+
+DetailView = graphql(query, queryOptions)(DetailView)
+export default DetailView
+```
+
+> At this point you should be able to browse to the list view and click at an item and see the DetailView with correct data.
