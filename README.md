@@ -24,7 +24,7 @@ In this workshop, we will address the following topics:
 1. [Add ReactRouter to React](#add-react-router)
 1. [Add Apollo to React](#add-apollo)
 1. [Add Query with Variables for DetailView](#add-query-with-variables)
-1. Add Token Middleware for Authentication
+1. [Add Token Middleware for Authentication](#add-token-middleware)
 1. Add Login / Logout Views
 1. Add Mutation for CreateView
 1. Show Form Errors on CreateView
@@ -796,6 +796,8 @@ steps are slightly different here:
    `/:id/` part of the path of our Route)
 
 ```jsx
+// File: ./frontend/src/views/DetailView.js
+
 import React from 'react'
 import { gql, graphql } from 'react-apollo'
 
@@ -836,3 +838,268 @@ export default DetailView
 ```
 
 > At this point you should be able to browse to the list view and click at an item and see the DetailView with correct data.
+
+## <a name="add-token-middleware"></a>Add Token Middleware for Authentication
+
+A very common problem is "How to do authentication?". We will use JWT, so on
+the frontend, we need a way to make sure that we send the current token with
+every request. On the backend, we need to make sure, to attach the current user
+to the request, if a valid token has been sent.
+
+Let's start with the server:
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/backend/backend/
+touch middleware.py
+```
+
+First, we will create a new middleware that attaches the current user to the
+request, if a valid token is given:
+
+```py
+# File: ./backend/backend/middleware.py
+
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
+
+class JWTMiddleware(object):
+    def process_view(self, request, view_func, view_args, view_kwargs):
+        token = request.META.get('HTTP_AUTHORIZATION', '')
+        if not token.startswith('JWT'):
+            return
+        jwt_auth = JSONWebTokenAuthentication()
+        auth = None
+        try:
+            auth = jwt_auth.authenticate(request)
+        except Exception:
+            return
+        request.user = auth[0]
+```
+
+Next, we need to add this new middleware to our settings. Note: For the sake
+of simplicity, I'm setting `JWT_VERIFY_EXPIRATION = False`, which means that
+the token will never expire. In the real world, you will want to set some
+expiry time like two weeks here and then in your frontend store the token
+creation time together with your token in localStorage and whenever the token
+is close to the expiry date, call the `api-token-refresh` endpoint to get a
+new token.
+
+```py
+# File: ./backend/backend/settings.py
+
+JWT_VERIFY_EXPIRATION = False
+
+MIDDLEWARE_CLASSES = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'backend.middleware.JWTMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+Next, we need to update our schema so that we can query the current user. For
+sake of simplicity, I'm putting this new endpoint into the `simple_app`. In
+reality I would create a new app `user_profile` and add another schema file
+in that new app. As usual, we start with our tests:
+
+```py
+# File: ./backend/simple_app/tests/test_schema.py
+
+def test_user_type():
+    instance = schema.UserType()
+    assert instance
+
+
+def test_current_user():
+    q = schema.Query()
+    req = RequestFactory().get('/')
+    req.user = AnonymousUser()
+    res = q.resolve_current_user(None, req, None)
+    assert res is None, 'Should return None if user is not authenticated'
+
+    user = mixer.blend('auth.User')
+    req.user = user
+    res = q.resolve_current_user(None, req, None)
+    assert res == user, 'Should return the current user if is authenticated'
+```
+
+Now we can write our implementation:
+
+```py
+# File: ./backend/simple_app/schema.py
+[...]
+from django.contrib.auth.models import User
+[...]
+
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = User
+
+[...]
+
+class Query(graphene.AbstractType):
+    current_user = graphene.Field(UserType)
+
+    def resolve_current_user(self, args, context, info):
+        if not context.user.is_authenticated():
+            return None
+        return context.user
+
+    [...]
+```
+
+> At this point, you shold be able to browse to `localhost:8000/graphiql` and run the following query: `{ currentUser { id } }`. If you were previously logged in to the Django admin, it should return your admin user as the current user.
+
+Finally, we need to make sure that every request has the token included. Apollo
+has the option to add middlewares to manipulate the requests that are being
+sent to the GraphQL API. We will try to read the JWT token from the
+`localStorage` and attach it to the request headers:
+
+```jsx
+// File: ./frontend/src/App.js
+
+[...]
+
+const networkInterface = createBatchingNetworkInterface({
+  uri: 'http://localhost:8000/gql/',
+  batchInterval: 10,
+  opts: {
+    credentials: 'same-origin',
+  },
+})
+
+// Add this new part:
+networkInterface.use([
+  {
+    applyBatchMiddleware(req, next) {
+      if (!req.options.headers) {
+        req.options.headers = {}
+      }
+
+      const token = localStorage.getItem('token')
+        ? localStorage.getItem('token')
+        : null
+      req.options.headers['authorization'] = `JWT ${token}`
+      next()
+    },
+  },
+])
+
+const client = new ApolloClient({
+  networkInterface: networkInterface,
+})
+
+[...]
+```
+
+Right now, it's a bit hard to test in our frontend if all this is working,
+so let's use the `currentUser` endpoint in our `CreateView` and if the user
+is not logged in, let's redirect to the `/login/` view:
+
+```jsx
+// File: ./frontend/src/views/CreateView.js
+
+import React from 'react'
+import { gql, graphql } from 'react-apollo'
+
+const query = gql`
+{
+  currentUser {
+    id
+  }
+}
+`
+
+class CreateView extends React.Component {
+  componentWillUpdate(nextProps) {
+    if (!nextProps.data.loading && nextProps.data.currentUser === null) {
+      window.location.replace('/login/')
+    }
+  }
+
+  render() {
+    let { data } = this.props
+    if (data.loading) {
+      return <div>Loading...</div>
+    }
+    return <div>CreateView</div>
+  }
+}
+
+CreateView = graphql(query)(CreateView)
+export default CreateView
+```
+
+> At this point, you should be able to click at the `Create Message` link and be redirected to the `/login/` view.
+
+Finally, we want to be able to actually login and receive a valid JWT token, so
+lets implement the LoginView. Here are some notable steps:
+
+1. We use the `fetch` api to send the request to the `api-token-auth` endpoint
+1. If we provide correct username and password, we save the token to
+   localStorage and refresh the page. In the real world, you would want to
+   check if there is a `?next` parameter in the URL so that you can redirect
+   back to the URL that triggered the login view
+1. We use `let data = new FormData(this.form)` to collect all current values
+   from all input elements that are inside the form
+1. With a neat little React trick `<form ref={ref => this.form = ref}>` we are
+   able to get a reference to our form anywhere in our code via `this.form`
+
+```jsx
+// File: ./frontend/src/views/LoginView.js
+
+import React from 'react'
+
+export default class LoginView extends React.Component {
+  handleSubmit(e) {
+    e.preventDefault()
+    let data = new FormData(this.form)
+    fetch('http://localhost:8000/api-token-auth/', {
+      method: 'POST',
+      body: data,
+    })
+      .then(res => {
+        res.json().then(res => {
+          if (res.token) {
+            localStorage.setItem('token', res.token)
+            window.location.replace('/')
+          }
+        })
+      })
+      .catch(err => {
+        console.log('Network error')
+      })
+  }
+
+  render() {
+    return (
+      <div>
+        <h1>LoginView</h1>
+        <form
+          ref={ref => (this.form = ref)}
+          onSubmit={e => this.handleSubmit(e)}
+        >
+          <div>
+            <label>Username:</label>
+            <input type="text" name="username" />
+          </div>
+          <div>
+            <label>Password:</label>
+            <input type="password" name="password" />
+          </div>
+          <button type="submit">Login</button>
+        </form>
+      </div>
+    )
+  }
+}
+```
+
+> At this point you should be able to click at `Login`, provide username and password, then go back to `Create Message`.

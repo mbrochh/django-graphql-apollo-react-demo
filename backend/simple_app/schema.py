@@ -1,8 +1,14 @@
 import json
 import graphene
+from django.contrib.auth.models import User
 from graphene_django.types import DjangoObjectType
 
 from . import models
+
+
+class UserType(DjangoObjectType):
+    class Meta:
+        model = User
 
 
 class MessageType(DjangoObjectType):
@@ -39,6 +45,13 @@ class Mutation(graphene.AbstractType):
 
 
 class Query(graphene.AbstractType):
+    current_user = graphene.Field(UserType)
+
+    def resolve_current_user(self, args, context, info):
+        if not context.user.is_authenticated():
+            return None
+        return context.user
+
     message = graphene.Field(MessageType, id=graphene.Int())
 
     def resolve_message(self, args, context, info):

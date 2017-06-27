@@ -19,6 +19,22 @@ const networkInterface = createBatchingNetworkInterface({
   },
 })
 
+networkInterface.use([
+  {
+    applyBatchMiddleware(req, next) {
+      if (!req.options.headers) {
+        req.options.headers = {}
+      }
+
+      const token = localStorage.getItem('token')
+        ? localStorage.getItem('token')
+        : null
+      req.options.headers['authorization'] = `JWT ${token}`
+      next()
+    },
+  },
+])
+
 const client = new ApolloClient({
   networkInterface: networkInterface,
 })
