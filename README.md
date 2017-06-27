@@ -589,7 +589,7 @@ yarn start
 
 > At this point you should be able to run `yarn start` and the new ReactJS project should open up in a browser tab
 
-## Add ReactRouter to React](#add-react-router)
+## <a name="add-react-router"></a>Add ReactRouter to React
 
 ```bash
 cd ~/Projects/django-graphql-apollo-react-demo/src/frontend
