@@ -22,7 +22,7 @@ In this workshop, we will address the following topics:
 
 1. [Create a new React Project](#create-new-react-project)
 1. [Add ReactRouter to React](#add-react-router)
-1. Add Apollo to React
+1. [Add Apollo to React](#add-apollo)
 1. Add Token Middleware for Authentication
 1. Add Login / Logout Views
 1. Add Query for ListView
@@ -514,7 +514,8 @@ pip install djangorestframework-jwt
 pip install django-cors-headers
 ```
 
-Now we need to update our Django settings:
+Now we need to update our Django settings with new settings related to the
+`rest_framework` and `corsheaders` apps:
 
 ```py
 # File: ./backend/backend/settings.py**
@@ -544,6 +545,18 @@ REST_FRAMEWORK = {
 }
 
 CORS_ORIGIN_ALLOW_ALL = True
+
+MIDDLEWARE_CLASSES = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
 ```
 
 Now that Rest Framework is configured, we need to add a few URLs:
@@ -663,3 +676,104 @@ export default class ListView extends React.Component {
 ```
 
 > At this point you should be able to run `yarn start` and see your projects. When you click at the links, the corresponding views should be rendered and the URL should change.
+
+## <a name="add-apollo"></a>Add Apollo to React
+
+We can now add Apollo to the mix. First we need to install it via yarn:
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/frontend/
+yarn add react-apollo
+```
+
+Similar to react-router, we need to wrap our entire app in a higher order
+component that comes with Apollo. There are four steps involved:
+
+1. Import relevant imports from `react-apollo`
+2. Create a `networkInterface` that points to the GraphQL API
+3. Instantiate `ApolloClient` using our `networkInterface`
+4. Wrap entire app in `<ApolloProvider>` component
+
+```jsx
+// File: ./frontend/src/App.js
+
+[...]
+import {
+  ApolloProvider,
+  ApolloClient,
+  createBatchingNetworkInterface,
+} from 'react-apollo'
+[...]
+
+const networkInterface = createBatchingNetworkInterface({
+  uri: 'http://localhost:8000/gql',
+  batchInterval: 10,
+  opts: {
+    credentials: 'same-origin',
+  },
+})
+
+const client = new ApolloClient({
+  networkInterface: networkInterface,
+})
+
+class App extends Component {
+  render() {
+    return (
+      <ApolloProvider client={client}>
+        [...]
+      </ApolloProvider>
+    )
+  }
+}
+
+export default App
+```
+
+In order to test if our Apollo installation is working properly, let's implement
+our ListView. There are some notable steps involved, too:
+
+1. Import relevant imports from `react-apollo`
+2. Create a `query` variable with the GraphQL query
+3. Use `this.props.data.loading` to render "Loading" while query is in flight
+4. Use `this.props.data.allMessages` to render all messages
+5. Wrap `ListView` in `graphql` decorator
+
+```jsx
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { gql, graphql } from 'react-apollo'
+
+const query = gql`
+{
+  allMessages {
+    id, message
+  }
+}
+`
+
+class ListView extends React.Component {
+  render() {
+    let { data } = this.props
+    if (data.loading || !data.allMessages) {
+      return <div>Loading...</div>
+    }
+    return (
+      <div>
+        {data.allMessages.map(item => (
+          <p key={item.id}>
+            <Link to={`/messages/${item.id}/`}>
+              {item.message}
+            </Link>
+          </p>
+        ))}
+      </div>
+    )
+  }
+}
+
+ListView = graphql(query)(ListView)
+export default ListView
+```
+
+> At this point, you should be able to browse to `localhost:3000/` and see a list of messages. If you don't have any message in your database yet, add some at `localhost:8000/admin/`
