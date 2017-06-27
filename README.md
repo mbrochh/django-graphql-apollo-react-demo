@@ -16,7 +16,7 @@ In this workshop, we will address the following topics:
 1. [Add GraphQL to Django](#add-graphql-to-django)
 1. [Add Message-DjangoObjectType to GraphQL Schema](#add-django-object-type)
 1. [Add Mutation to GraphQL Schema](#add-mutation)
-1. Add JWT-Authentication to Django
+1. [Add JWT-Authentication to Django](#add-jwt)
 
 ## Part 2: The Frontend
 
@@ -492,3 +492,83 @@ mutation {
   }
 }
 ```
+
+## <a name="add-jwt"></a>Add JWT-Authentication to Django
+
+One of the most common things that every web application needs is
+authentication. During my research I found [django-graph-auth](https://github.com/morgante/django-graph-auth), which is
+based on Django Rest Frameworks JWT plugin. There is als [pyjwt](https://pyjwt.readthedocs.io/en/latest/), which would allow you to
+implement your own endpoints.
+
+I didn't have the time to evaluate `django-graph-auth` yet, and I didn't have
+the confidence to run my own implementation. For that reason, I chose the
+practical approach and used what is tried and tested by a very large user base
+and added Django Rest Framework and
+[django-rest-framework-jwt](https://github.com/GetBlimp/django-rest-framework-jwt)
+to the project.
+
+We will also need to install [django-cors-headers](https://github.com/ottoyiu/django-cors-headers) because
+during local development, the backend and the frontend are served from
+different ports, so we need to enable to accept requests from all origins.
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src/backend
+pip install djangorestframework
+pip install djangorestframework-jwt
+pip install django-cors-headers
+```
+
+Now we need to update our Django settings:
+
+```py
+# File: ./backend/backend/settings.py**
+
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'rest_framework',
+    'corsheaders',
+    'graphene_django',
+    'simple_app',
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ),
+}
+
+CORS_ORIGIN_ALLOW_ALL = True
+```
+
+Now that Rest Framework is configured, we need to add a few URLs:
+
+```py
+# File: ./backend/backend/urls.py
+
+[...]
+from rest_framework_jwt.views import obtain_jwt_token
+from rest_framework_jwt.views import refresh_jwt_token
+from rest_framework_jwt.views import verify_jwt_token
+
+
+urlpatterns = [
+    url(r'^admin/', admin.site.urls),
+    url(r'^graphiql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url(r'^gql', csrf_exempt(GraphQLView.as_view(batch=True))),
+    url(r'^api-token-auth/', obtain_jwt_token),
+    url(r'^api-token-refresh/', refresh_jwt_token),
+    url(r'^api-token-verify/', verify_jwt_token),
+]
+```
+
+> At this point you should be able to get a token by sending this request: `curl -X POST -d "username=admin&password=test1234" http://localhost:8000/api-token-auth/`
