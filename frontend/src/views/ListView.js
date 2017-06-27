@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { gql, graphql } from 'react-apollo'
 import queryString from 'query-string'
 
-const query = gql`
+export const query = gql`
 query ListViewSearch($search: String, $endCursor: String) {
   allMessages(first: 2, message_Icontains: $search, after: $endCursor) {
     edges {

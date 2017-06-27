@@ -30,7 +30,7 @@ In this workshop, we will address the following topics:
 1. [Show Form Errors on CreateView](#show-form-errors)
 1. [Add Filtering to ListView](#add-filtering)
 1. [Add Pagination to ListView](#add-pagination)
-1. Add Cache Invalidation
+1. [Add Cache Invalidation](#cache-invalidation)
 
 Before you start, you should read a little bit about [GraphQL](http://graphql.org/learn/) and [Apollo](http://dev.apollodata.com/react/) and [python-graphene](http://docs.graphene-python.org/projects/django/en/latest/).
 
@@ -1559,4 +1559,35 @@ ListView = graphql(query, queryOptions)(ListView)
 export default ListView
 ```
 
-> At this point you should be able to click the `Load more...` button and new items should appear, when there are no more items, the button should disappear.
+> At this point you should be able to click the `Load more...` button and new items should appear, when there are no more items, the button should disappear. When you click in and out of items from the list, observe the incoming request in the terminal: You will see that loading the same object several times in a row does not trigger new requests, because the data is already in the cache.
+
+## <a name="cache-invalidation"></a>Add Cache Invalidation
+
+First of all, you might have components where you always want to fetch the data
+from the network when the component is mounted. In this case, you can change
+the `fetchPolicy` on the `queryOptions`:
+
+```jsx
+# File: ./frontend/src/views/DetailView.js
+
+const queryOptions = {
+  options: props => ({
+    variables: {
+      id: props.match.params.id,
+    },
+    fetchPolicy: 'network-only',
+  }),
+}
+
+DetailView = graphql(query, queryOptions)(DetailView)
+```
+
+There are other ways to update the cache right after a mutation, see
+[here](http://dev.apollodata.com/react/api-mutations.html#graphql-mutation-options-refetchQueries)
+and
+[here](http://dev.apollodata.com/react/api-mutations.html#graphql-mutation-options-update).
+There is also a project called
+[apollo-cache-invalidation](https://www.npmjs.com/package/apollo-cache-invalidation)
+which is experimental.
+
+I have not played around enough with cache invalidation to give any guides.
