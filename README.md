@@ -297,7 +297,7 @@ def test_message_type():
     assert instance
 
 
-def test_all_messages():
+def test_resolve_all_messages():
     mixer.blend('simple_app.Message')
     mixer.blend('simple_app.Message')
     q = schema.Query()
@@ -319,6 +319,7 @@ from . import models
 class MessageType(DjangoObjectType):
     class Meta:
         model = models.Message
+        interfaces = (graphene.Node, )
 
 
 class Query(graphene.AbstractType):
@@ -350,18 +351,32 @@ schema = graphene.Schema(query=Queries)
 
 > At this point, you should be able to run `pytest` and get three passing tests.
 > You should also be able to add a few messages to the DB at `localhost:8000/admin/simple_app/message/`
-> You should also be able to browse to `localhost:8000/graphiql/` and run the query `{ allMessages { id, message } }`
+> You should also be able to browse to `localhost:8000/graphiql/` and run the query:
+
+```graphql
+{
+  allMessages {
+    edges {
+      node {
+        id, message
+      }
+    }
+  }
+}
+```
 
 The query `all_messages` returns a list of objects. Let's add another query
 that returns just one object:
 
 ```py
 # File: ./backend/simple_app/tests/test_schema.py
+from graphql_relay.node.node import to_global_id
 
-def test_message():
+def test_resolve_message():
     msg = mixer.blend('simple_app.Message')
     q = schema.Query()
-    res = q.resolve_messages(None, {'id': msg.pk}, None)
+    id = to_global_id('MessageType', msg.pk)
+    res = q.resolve_messages(None, {'id': id}, None)
     assert res == msg, 'Should return the requested message'
 ```
 
@@ -371,16 +386,18 @@ To make the test pass, let's update our schema file:
 # File: ./backend/simple_app/schema.py
 
 class Query(graphene.AbstractType):
-    message = graphene.Field(MessageType, id=graphene.Int())
+    message = graphene.Field(MessageType, id=graphene.ID())
 
     def resolve_message(self, args, context, info):
-        return models.Message.objects.get(pk=args.get('id'))
+        rid = from_global_id(args.get('id'))
+        # rid is a tuple: ('MessageType', '1')
+        return models.Message.objects.get(pk=rid[0]))
 
     [...]
 ```
 
 > At this point you should be able to run `pytest` and see four passing tests
-> You should also be able to browse to `graphiql` and run the query `{ message(id:1) { id, message } }`
+> You should also be able to browse to `graphiql` and run the query `{ message(id: "TWVzc2FnZVR5cGU6MQ==") { id, message } }`
 
 ## <a name="add-mutation"></a>Add Mutation to GraphQL Schema
 
@@ -802,7 +819,7 @@ import React from 'react'
 import { gql, graphql } from 'react-apollo'
 
 const query = gql`
-query DetailView($id: Int!) {
+query DetailView($id: ID!) {
   message(id: $id) {
     id, creationDate, message
   }
@@ -917,7 +934,7 @@ def test_user_type():
     assert instance
 
 
-def test_current_user():
+def test_resolve_current_user():
     q = schema.Query()
     req = RequestFactory().get('/')
     req.user = AnonymousUser()
@@ -1533,6 +1550,7 @@ const queryOptions = {
   options: props => ({
     variables: {
       search: queryString.parse(props.location.search).search,
+      endCursor: null,
     },
   }),
 }

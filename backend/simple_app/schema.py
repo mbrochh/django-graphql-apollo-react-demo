@@ -3,6 +3,7 @@ import graphene
 from django.contrib.auth.models import User
 from graphene_django.types import DjangoObjectType
 from graphene_django.filter.fields import DjangoFilterConnectionField
+from graphql_relay.node.node import from_global_id
 
 from . import models
 
@@ -55,10 +56,11 @@ class Query(graphene.AbstractType):
             return None
         return context.user
 
-    message = graphene.Field(MessageType, id=graphene.Int())
+    message = graphene.Field(MessageType, id=graphene.ID())
 
     def resolve_message(self, args, context, info):
-        return models.Message.objects.get(pk=args.get('id'))
+        rid = from_global_id(args.get('id'))
+        return models.Message.objects.get(pk=rid[1])
 
     all_messages = DjangoFilterConnectionField(MessageType)
 

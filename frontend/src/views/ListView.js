@@ -82,6 +82,7 @@ const queryOptions = {
   options: props => ({
     variables: {
       search: queryString.parse(props.location.search).search,
+      endCursor: null,
     },
   }),
 }

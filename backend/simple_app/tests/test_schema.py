@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 from mixer.backend.django import mixer
+from graphql_relay.node.node import to_global_id
 
 from .. import schema
 
@@ -19,7 +20,7 @@ def test_message_type():
     assert instance
 
 
-def test_current_user():
+def test_resolve_current_user():
     q = schema.Query()
     req = RequestFactory().get('/')
     req.user = AnonymousUser()
@@ -32,14 +33,15 @@ def test_current_user():
     assert res == user, 'Should return the current user if is authenticated'
 
 
-def test_message():
+def test_resolve_message():
     msg = mixer.blend('simple_app.Message')
     q = schema.Query()
-    res = q.resolve_message({'id': msg.pk}, None, None)
+    id = to_global_id('MessageType', msg.pk)
+    res = q.resolve_message({'id': id}, None, None)
     assert res == msg, 'Should return the requested message'
 
 
-def test_all_messages():
+def test_resolve_all_messages():
     mixer.blend('simple_app.Message')
     mixer.blend('simple_app.Message')
     q = schema.Query()
