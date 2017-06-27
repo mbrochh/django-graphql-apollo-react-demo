@@ -1104,3 +1104,28 @@ export default class LoginView extends React.Component {
 ```
 
 > At this point you should be able to click at `Login`, provide username and password, then go back to `Create Message`.
+
+When we are at it, let's also create our `LogoutView`. That one is pretty
+simple, we just remove the token from localStorage and trigger a page refresh.
+
+```jsx
+import React from 'react'
+
+export default class LogoutView extends React.Component {
+  handleClick() {
+    localStorage.removeItem('token')
+    window.location.replace('/')
+  }
+
+  render() {
+    return (
+      <div>
+        <h1>Logout</h1>
+        <button onClick={() => this.handleClick()}>Logout</button>
+      </div>
+    )
+  }
+}
+```
+
+> At this point you should be able to login, browse to `Create Message` view and to logout again.
