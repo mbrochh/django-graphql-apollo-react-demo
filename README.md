@@ -854,7 +854,8 @@ touch middleware.py
 ```
 
 First, we will create a new middleware that attaches the current user to the
-request, if a valid token is given:
+request, if a valid token is given. We are standing on the shoulder of giants
+and re-use the implementation from django-rest-framework-jwt here:
 
 ```py
 # File: ./backend/backend/middleware.py
