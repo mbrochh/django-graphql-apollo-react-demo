@@ -71,9 +71,10 @@ cd backend
 We like to build our Django apps in a test-driven manner, so let's also create
 a few files to setup our testing framework:
 
-**File: ./backend/backend/test_settings.py**
 
 ```py
+# File: ./backend/backend/test_settings.py
+
 from .settings import *  # NOQA
 
 DATABASES = {
@@ -90,16 +91,16 @@ PASSWORD_HASHERS = (
 DEFAULT_FILE_STORAGE = 'inmemorystorage.InMemoryStorage'
 ```
 
-**File: ./backend/pytest.ini**
-
 ```config
+# File: ./backend/pytest.ini
+
 [pytest]
 DJANGO_SETTINGS_MODULE = backend.test_settings
 ```
 
-**File: ./backend/.coveragerc**
-
 ```config
+# File: ./backend/.coveragerc
+
 [run]
 omit = manage.py, *wsgi.py, *test_settings.py, *settings.py, *urls.py, *__init__.py, */apps.py, */tests/*, */migrations/*
 ```
@@ -124,10 +125,8 @@ touch tests/test_models.py
 Whenever we create a new app, we need to tell Django that this app is now part
 of our project:
 
-**File: ./backend/backend/settings.py**
-
 ```py
-# Add `simple_app` to `INSTALLED_APPS` setting
+# File: ./backend/backend/settings.py
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -145,9 +144,9 @@ much, so we will simply test if we are able to create an instance and save it
 to the DB. We are using [mixer](https://github.com/klen/mixer) to help us with
 the creation of test-fixtures.
 
-**File: ./backend/simple_app/tests/test_models.py**
-
 ```py
+# File: ./backend/simple_app/tests/test_models.py
+
 import pytest
 from mixer.backend.django import mixer
 
@@ -162,9 +161,8 @@ def test_message():
 
 Next, let's create our `Message` model:
 
-**File: ./backend/simple_app/models.py**
-
 ```py
+# File: ./backend/simple_app/models.py
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db import models
@@ -178,9 +176,8 @@ class Message(models.Model):
 Let's also register the new model with the Django admin, so that we can add
 entries to the new table:
 
-**File: ./backend/simple_app/admin.py**
-
 ```py
+# File: ./backend/simple_app/admin.py
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.contrib import admin
@@ -215,9 +212,8 @@ Whenever we add a new app to Django, we need to update our `INSTALLED_APPS`
 setting. Because of `graphene-django`, we also need to add one app-specific
 setting.
 
-**File: ./backend/backend/settings.py**
-
 ```py
+# File: ./backend/backend/settings.py
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -238,9 +234,9 @@ Now we need to create our main `schema.py` file. This file is similar to our
 main `urls.py` - it's task is to import all the schema-files in our project and
 merge them into one big schema.
 
-**File: ./backend/backend/schema.py**
-
 ```py
+# File: ./backend/backend/schema.py
+
 import graphene
 
 class Queries(
@@ -254,9 +250,9 @@ schema = graphene.Schema(query=Queries)
 
 Finally, we need to hook up GraphiQL in our Django `urls.py`:
 
-**File: ./backend/backend/urls.py**
-
 ```py
+# File: ./backend/backend/urls.py
+
 from django.conf.urls import url
 from django.contrib import admin
 from django.views.decorators.csrf import csrf_exempt
@@ -285,9 +281,9 @@ we will also create a query that returns all messages.
 In good TDD fashion, we begin with a test for the type and a test for the
 query:
 
-**File: ./backend/simple_app/tests/test_schema.py**
-
 ```py
+# File: ./backend/simple_app/tests/test_schema.py
+
 import pytest
 from mixer.backend.django import mixer
 
@@ -312,9 +308,9 @@ def test_all_messages():
 
 In order to make our test pass, we will now add our type and the query:
 
-**File: ./backend/simple_app/schema.py**
-
 ```py
+# File: ./backend/simple_app/schema.py
+
 import graphene
 from graphene_django.types import DjangoObjectType
 
@@ -335,9 +331,9 @@ class Query(graphene.AbstractType):
 
 Finally, we need to update your main `schema.py` file:
 
-**File: ./backend/backend/schema.py**
-
 ```py
+# File: ./backend/backend/schema.py
+
 import graphene
 
 import simple_app.schema
@@ -360,9 +356,9 @@ schema = graphene.Schema(query=Queries)
 The query `all_messages` returns a list of objects. Let's add another query
 that returns just one object:
 
-**File: ./backend/simple_app/tests/test_schema.py**
-
 ```py
+# File: ./backend/simple_app/tests/test_schema.py
+
 def test_message():
     msg = mixer.blend('simple_app.Message')
     q = schema.Query()
@@ -372,9 +368,9 @@ def test_message():
 
 To make the test pass, let's update our schema file:
 
-**File: ./backend/simple_app/schema.py**
-
 ```py
+# File: ./backend/simple_app/schema.py
+
 class Query(graphene.AbstractType):
     message = graphene.Field(MessageType, id=graphene.Int())
 
@@ -397,9 +393,9 @@ want to ensure that our mutation does three things:
 1. Return a 400 status and form errors if the user does not provide a message
 1. Return a 200 status and the newly created message if everything is OK
 
-**File: ./backend/simple_app/tests/test_schema.py**
-
 ```py
+# File: ./backend/simple_app/tests/test_schema.py
+
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 
@@ -427,9 +423,9 @@ def test_create_message_mutation():
 
 With these tests in place, we can implement the actual mutation:
 
-**File: ./backend/simple_app/schema.py**
-
 ```py
+# File: ./backend/simple_app/schema.py
+
 import json
 
 class CreateMessageMutation(graphene.Mutation):
@@ -464,9 +460,9 @@ class Mutation(graphene.AbstractType):
 This new `Mutation` class is currently not hooked up in our main `schema.py`
 file, so let's add that:
 
-**File: ./backend/backend/schema.py**
-
 ```py
+# File: ./backend/backend/schema.py
+
 class Mutations(
     simple_app.schema.Mutation,
     graphene.ObjectType,
