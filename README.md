@@ -740,6 +740,8 @@ our ListView. There are some notable steps involved, too:
 5. Wrap `ListView` in `graphql` decorator
 
 ```jsx
+// File: ./frontend/src/views/ListView.js
+
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { gql, graphql } from 'react-apollo'
