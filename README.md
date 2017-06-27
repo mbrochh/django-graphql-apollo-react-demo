@@ -20,7 +20,7 @@ In this workshop, we will address the following topics:
 
 ## Part 2: The Frontend
 
-1. Create a new React Project
+1. [Create a new React Project](#create-new-react-project)
 1. Add ReactRouter to React
 1. Add Apollo to React
 1. Add Token Middleware for Authentication
@@ -568,3 +568,17 @@ urlpatterns = [
 ```
 
 > At this point you should be able to get a token by sending this request: `curl -X POST -d "username=admin&password=test1234" http://localhost:8000/api-token-auth/`
+
+# Part 2: The Frontend
+
+## <a name="create-new-react-project"></a>Create a new React Project
+
+```bash
+cd ~/Projects/django-graphql-apollo-react-demo/src
+npm install -g create-react-app
+create-react-app frontend
+cd frontend
+yarn start
+```
+
+> At this point you should be able to run `yarn start` and the new ReactJS project should open up in a browser tab
