@@ -356,11 +356,7 @@ schema = graphene.Schema(query=Queries)
 ```graphql
 {
   allMessages {
-    edges {
-      node {
-        id, message
-      }
-    }
+    id, message
   }
 }
 ```
@@ -370,13 +366,14 @@ that returns just one object:
 
 ```py
 # File: ./backend/simple_app/tests/test_schema.py
+
 from graphql_relay.node.node import to_global_id
 
 def test_resolve_message():
     msg = mixer.blend('simple_app.Message')
     q = schema.Query()
     id = to_global_id('MessageType', msg.pk)
-    res = q.resolve_messages(None, {'id': id}, None)
+    res = q.resolve_messages({'id': id}, None, None)
     assert res == msg, 'Should return the requested message'
 ```
 
@@ -385,13 +382,15 @@ To make the test pass, let's update our schema file:
 ```py
 # File: ./backend/simple_app/schema.py
 
+from graphql_relay.node.node import from_global_id
+
 class Query(graphene.AbstractType):
     message = graphene.Field(MessageType, id=graphene.ID())
 
     def resolve_message(self, args, context, info):
         rid = from_global_id(args.get('id'))
         # rid is a tuple: ('MessageType', '1')
-        return models.Message.objects.get(pk=rid[0]))
+        return models.Message.objects.get(pk=rid[1]))
 
     [...]
 ```
@@ -1278,6 +1277,12 @@ displays the form errors:
 ```jsx
 // File: ./frontend/src/views/CreateView.js
 
+  // Add this constructor:
+  constuctor(props) {
+    super(props)
+    this.state = {formErrors: null}
+  }
+
   // Update this function:
   handleSubmit(e) {
     e.preventDefault()
@@ -1321,6 +1326,10 @@ graphene-django has some integration with [django-filter](https://github.com/car
 can be solved easily.
 
 Note: You can learn more about filtering [here](http://docs.graphene-python.org/projects/django/en/latest/filtering/).
+
+```bash
+pip install django-filter
+```
 
 ```py
 # File: ./backend/simple_app/schema.py
