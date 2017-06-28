@@ -390,7 +390,7 @@ class Query(graphene.AbstractType):
     def resolve_message(self, args, context, info):
         rid = from_global_id(args.get('id'))
         # rid is a tuple: ('MessageType', '1')
-        return models.Message.objects.get(pk=rid[1]))
+        return models.Message.objects.get(pk=rid[1])
 
     [...]
 ```
