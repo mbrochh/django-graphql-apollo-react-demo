@@ -1278,7 +1278,7 @@ displays the form errors:
 // File: ./frontend/src/views/CreateView.js
 
   // Add this constructor:
-  constuctor(props) {
+  constructor(props) {
     super(props)
     this.state = {formErrors: null}
   }
