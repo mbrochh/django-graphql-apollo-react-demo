@@ -2,10 +2,10 @@
 
 This repo contains the code shown at the [Singapore Djangonauts June 2017 Meetup](https://www.meetup.com/Singapore-Djangonauts/events/240608776/)
 
-A video of the workshop will be uploaded on engineers.sg, shortly.
+TODO: A video of the workshop will be uploaded on engineers.sg, shortly.
 
-This README was basically the "slides" for the workshop, so if you want to learn
-as well, just keep on reading!
+This README was basically the "slides" for the workshop, so if you want to
+learn as well, just keep on reading!
 
 In this workshop, we will address the following topics:
 
@@ -32,13 +32,32 @@ In this workshop, we will address the following topics:
 1. [Add Pagination to ListView](#add-pagination)
 1. [Add Cache Invalidation](#cache-invalidation)
 
+## Part 3: Advanced Topics
+
+I am planning to keep this repo alive and add some more best practices as I
+implement them out at work. Some ideas:
+
+1. Create a HOC "<LoginRequired>" to protect views
+1. Create a HOC "<NetworkStatus>" to allow refetching of failed queries after
+   the network was down
+1. Don't refresh the entire page after login/logout
+1. Create Python decorator like "login_required" for mutations and resolvers
+1. Some examples for real cache invalidation
+1. Hosting (EC2 instance for Django, S3 bucket for frontend files)
+
+If you have more ideas, please add them in the issue tracker!
+
 Before you start, you should read a little bit about [GraphQL](http://graphql.org/learn/) and [Apollo](http://dev.apollodata.com/react/) and [python-graphene](http://docs.graphene-python.org/projects/django/en/latest/).
 
 If you have basic understanding of Python, Django, JavaScript and ReactJS, you
 should be able to follow this tutorial and copy and paste the code snippets
-shown below and hopefully it will all work out nicely. It should give you a
-feeling for the necessary steps involved, for the files involved and some ideas
-for some useful patterns that most people usually need in their apps.
+shown below and hopefully it will all work out nicely.
+
+The tutorial should give you a feeling for the necessary steps involved when
+building a web application with Django, GraphQL and ReactJS.
+
+If you find typos or encounter other issues, please report them at the issue
+tracker.
 
 # <a name="part1"></a>Part 1: The Backend
 
@@ -199,7 +218,7 @@ cd ~/Projects/django-graphql-apollo-react-demo/src/backend
 
 ## <a name="add-graphql-to-django"></a>Add GraphQL to Django
 
-Sinve we have now a Django project with a model, we can start thinking about
+Since we have now a Django project with a model, we can start thinking about
 adding an API. We will use GraphQL for that.
 
 ```bash
