@@ -35,11 +35,11 @@ In this workshop, we will address the following topics:
 ## Part 3: Advanced Topics
 
 I am planning to keep this repo alive and add some more best practices as I
-implement them out at work. Some ideas:
+figure them out at work. Some ideas:
 
-1. Create a HOC "<LoginRequired>" to protect views
-1. Create a HOC "<NetworkStatus>" to allow refetching of failed queries after
-   the network was down
+1. Create a higher order component "LoginRequired" to protect views
+1. Create a higher order component "NetworkStatus" to allow refetching of
+   failed queries after the network was down
 1. Don't refresh the entire page after login/logout
 1. Create Python decorator like "login_required" for mutations and resolvers
 1. Some examples for real cache invalidation
