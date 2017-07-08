@@ -2,8 +2,13 @@
 
 This repo contains the code shown at the [Singapore Djangonauts June 2017 Meetup](https://www.meetup.com/Singapore-Djangonauts/events/240608776/)
 
-A video of the workshop [can be found on engineers.sg](https://engineers.sg/video/june-2017-meetup-django-graphql-reactjs-apollo-workshop-singapore-djangonauts-part-2--1857).
-The sound in the video is messed up, but it's fixed after minute 37 or so. :(
+A video of the workshop can be found on engineers.sg:
+
+[Part 1](https://engineers.sg/video/june-2017-meetup-django-graphql-reactjs-apollo-workshop-singapore-djangonauts-part-1--1856)
+[Part 2](https://engineers.sg/video/june-2017-meetup-django-graphql-reactjs-apollo-workshop-singapore-djangonauts-part-2--1857).
+
+The sound in the video is messed up. I'm looking for a venue and an audience
+to record the talk one more time :(
 
 This README was basically the "slides" for the workshop, so if you want to
 learn as well, just keep on reading!
