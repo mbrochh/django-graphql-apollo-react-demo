@@ -311,7 +311,7 @@ query:
 import pytest
 from mixer.backend.django import mixer
 
-from .. import schema
+from . import schema
 
 
 pytestmark = pytest.mark.django_db
