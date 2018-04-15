@@ -455,9 +455,8 @@ def test_create_message_mutation():
     assert 'message' in res.formErrors, (
         'Should have form error for message field')
 
-    req.user = user
-    res = mut.mutate(None, {'message': 'Test'}, req, None)
-    assert res.status == 200, 'Should return 400 if there are form errors'
+    res = mut.mutate(None, data, req, None)
+    assert res.status == 200, 'Should return 200 if mutation is successful'
     assert res.message.pk == 1, 'Should create new message'
 ```
 
